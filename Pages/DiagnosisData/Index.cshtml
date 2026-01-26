@@ -1,0 +1,115 @@
+﻿@page
+@model IndexModel
+@{
+}
+<div class="container">
+
+    @if(Model.Message != null)
+    {
+        @if (!Model.isSuccess)
+        {
+            <div class="alert alert-danger text-center">
+                @Model.Message
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-success text-center">
+                @Model.Message
+            </div>
+        }
+    }
+    <h1>Diagnosis data</h1>
+    <form method="post">
+        <div class="row mb-5 g-5">
+            <div class="col-md-1">                
+                <label>Clinician:</label>                
+            </div>
+            <div class="col-md-4">                
+                <select name="clinicianCode" asp-for="clinCode">
+                    <option value="" selected>...Select</option>
+                    @foreach(var s in Model.staffMembers)
+                    {
+                        <option value=@s.STAFF_CODE>@s.NAME</option>
+                    }
+                </select>                
+            </div>
+            <div class="col-md-1">
+                <label>Diagnosis:</label>
+            </div>
+            <div class="col-md-2">
+                <select name="diseaseCode" asp-for="disCode">
+                    <option value="" selected>...Select</option>
+                    @foreach (var d in Model.diseases)
+                    {
+                        <option value=@d.DISEASE_CODE>@d.DISEASE_CODE - @d.DESCRIPTION</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="row mb-5 g-5">
+            <div class="col-md-1">
+                <label>From:</label>
+            </div>
+            <div class="col-md-2">
+                <input type="date" name="startDate" asp-for="startDate" />
+            </div>
+            <div class="col-md-1">
+                <label>To:</label>
+            </div>
+            <div class="col-md-2">
+                <input type="date" name="endDate" asp-for="endDate" />
+            </div>
+        </div>
+        
+
+        <div class="row mb-5 g-5">
+            <div class="col-md-4">
+                <input type="submit" class="btn btn-secondary" />
+            </div>
+            <div class="col-md-6"></div>
+            <div class="col-md-2">
+                @*<a class="btn btn-outline-primary" asp-page="PrintReport">Print Report</a>*@
+                @*<input type="submit" class="btn btn-outline-primary" asp-route-isPrintReq="true" value="Print Report" />*@
+                <a class="btn btn-primary btn-lg" asp-area=""
+                   asp-page="/Download" asp-route-username=@Model.User.Identity.Name asp-route-clinicianCode="@Model.clinCode"                
+                asp-route-diseaseCode="@Model.disCode" asp-route-startDate="@Model.startDate.ToString("yyyy-MM-dd")" asp-route-endDate="@Model.endDate.ToString("yyyy-MM-dd")" asp-route-type="diagnosis">Export Data</a>
+            </div>
+        </div>        
+    </form>
+
+   
+    <div class="row">
+        <table id="defaultTable" class="table">
+            <thead>
+                <tr>
+                    <th>CGU Number</th>
+                    <th>Name</th>
+                    <th>Diagnosis Date</th>
+                    <th>Disease</th>
+                    <th>Status</th>
+                    <th>Recorded By</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var d in Model.diagnoses)
+                {                    
+                    <tr>
+                        <td>@d.CGU_No</td>
+                        <td>@d.FIRSTNAME @d.LASTNAME</td>
+                        <td>
+                            @if (@d.ENTEREDDATE != null)
+                            {
+                                @d.ENTEREDDATE.ToString("dd/MM/yyyy")
+                            }
+                        </td>     
+                        <td>@d.DESCRIPTION</td>
+                        <td>@d.STATUS</td>
+                        <td>@d.NAME</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

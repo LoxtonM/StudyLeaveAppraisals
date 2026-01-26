@@ -11,18 +11,18 @@ namespace StudyLeaveAppraisals.Meta
     {
         public string dlFilePath;
         private readonly ClinicalContext _clinContext;
-        private readonly IAppointmentData _appointmentData;
-        private readonly IReferralData _referralData;
-        private readonly ITotalTriageData _triageData;
-        private readonly IDiseaseData _diseaseData;
+        private readonly IAppointmentDataAsync _appointmentData;
+        private readonly IReferralDataAsync _referralData;
+        private readonly ITotalTriageDataAsync _triageData;
+        private readonly IDiseaseDataAsync _diseaseData;        
         
         public ExportServices(ClinicalContext context, SLAContext slaContext) 
         { 
             _clinContext = context;
-            _appointmentData = new AppointmentData(_clinContext);
-            _referralData = new ReferralData(_clinContext);
-            _triageData = new TotalTriageData(_clinContext);
-            _diseaseData = new DiseaseData(_clinContext);
+            _appointmentData = new AppointmentDataAsync(_clinContext);
+            _referralData = new ReferralDataAsync(_clinContext);
+            _triageData = new TotalTriageDataAsync(_clinContext);
+            _diseaseData = new DiseaseDataAsync(_clinContext);
         }
 
         public void ExportClinicReport(List<Appointment> apptList, string username)
@@ -133,7 +133,12 @@ namespace StudyLeaveAppraisals.Meta
                 string triagedDate = "";
                 string triaged = "No";
 
-                if(tr.Triaged) { triaged = "Yes"; }
+                if(tr.Triaged) 
+                { 
+                    triaged = "Yes";
+                    triagedDate = tr.TriagedDate.Value.ToString("dd/MM/yyyy");
+                
+                }
 
                 table.Rows.Add(tr.CGU_No,
                     tr.FIRSTNAME + " " + tr.LASTNAME,
@@ -146,6 +151,35 @@ namespace StudyLeaveAppraisals.Meta
 
             //return table;
             ToCSV(table, username, "triage");
+
+        }
+
+        public void ExportDiagnosisReport(List<Diagnosis> diagList, string username)
+        {
+            DataTable table = new DataTable();
+
+            table.Columns.Add("CGU Number", typeof(string));
+            table.Columns.Add("Name", typeof(string));
+            table.Columns.Add("Diagnosis", typeof(string));
+            table.Columns.Add("Status", typeof(string));
+            table.Columns.Add("Recorded By", typeof(string));            
+            table.Columns.Add("Recorded Date", typeof(string));
+
+            foreach (var d in diagList)
+            {
+                string diagDate = "";
+                
+                table.Rows.Add(d.CGU_No,
+                    d.FIRSTNAME + " " + d.LASTNAME,
+                    d.DESCRIPTION,
+                    d.STATUS,
+                    d.NAME,
+                    d.ENTEREDDATE.ToString("dd/MM/yyyy")
+                    );
+            }
+
+            //return table;
+            ToCSV(table, username, "diagnosis");
 
         }
 
@@ -205,8 +239,8 @@ namespace StudyLeaveAppraisals.Meta
             //Yep. We actually have to generate all of this again, because we can't just pass the list directly to the URL.
             if (type == "clinic")
             {
-                List<Appointment> appointments = _appointmentData.GetAppointmentsByClinicians(clinicianCode, startDate, endDate);
-                List<Appointment> mdcs = _appointmentData.GetMDC(clinicianCode, startDate, endDate);
+                List<Appointment> appointments = await _appointmentData.GetAppointmentsByClinicians(clinicianCode, startDate, endDate);
+                List<Appointment> mdcs = await _appointmentData.GetMDC(clinicianCode, startDate, endDate);
                 List<Appointment> totalappts = appointments.Concat(mdcs).OrderBy(a => a.BOOKED_DATE).ThenBy(a => a.BOOKED_TIME).ToList();
 
                 if (venueCode != null)
@@ -239,7 +273,7 @@ namespace StudyLeaveAppraisals.Meta
 
                     foreach (var pat in patients)
                     {
-                        List<Diagnosis> diagsPerPatient = _diseaseData.GetDiseaseListByPatient(pat.MPI);
+                        List<Diagnosis> diagsPerPatient = await _diseaseData.GetDiseaseListByPatient(pat.MPI);
                         foreach (var diagnosis in diagsPerPatient)
                         {
                             if (diagnosis.DISEASE_CODE == diseaseCode)
@@ -268,16 +302,23 @@ namespace StudyLeaveAppraisals.Meta
 
             if (type == "referral")
             {
-                List<Referral> referrals = _referralData.GetReferralsByStaffMember(clinicianCode, startDate, endDate);
+                List<Referral> referrals = await _referralData.GetReferralsByStaffMember(clinicianCode, startDate, endDate);
 
                 ExportReferralReport(referrals, username);
             }
 
             if (type == "triage")
             {
-                List<TriageTotal> triages = _triageData.GetAllTriages(clinicianCode, startDate, endDate);
+                List<TriageTotal> triages = await _triageData.GetAllTriages(clinicianCode, startDate, endDate);
 
                 ExportTriageReport(triages, username);
+            }
+
+            if (type == "diagnosis")
+            {
+                List<Diagnosis> diagnoses = await _diseaseData.GetDiagnosisListByType(diseaseCode);
+
+                ExportDiagnosisReport(diagnoses, username);
             }
 
 

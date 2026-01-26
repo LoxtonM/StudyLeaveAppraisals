@@ -163,7 +163,7 @@ namespace StudyLeaveAppraisals.Pages.ClinicData
                     List<Diagnosis> diags = new List<Diagnosis>();
                                        
                     foreach (var pat in patients)
-                    {
+                    {                        
                         List<Diagnosis> diagsPerPatient = _diseaseData.GetDiseaseListByPatient(pat.MPI);
                         foreach (var diagnosis in diagsPerPatient)
                         {
